@@ -1,0 +1,72 @@
+{
+    "pacientes": [
+        {
+            "id": "abcd8e91-eb79-4928-b864-c6ace3a6d30c",
+            "nombre": "Carlos",
+            "motivo": "Consulta General",
+            "monto": 200,
+            "estado": "finalizado",
+            "hora_creacion": "16:32",
+            "hora_salida": "17:11"
+        },
+        {
+            "id": "27f9238b-92ed-472d-8edd-21bde35f7eb6",
+            "nombre": "Karla",
+            "motivo": "Consulta General",
+            "monto": 200,
+            "estado": "consulta",
+            "hora_creacion": "16:32",
+            "hora_salida": "17:11"
+        },
+        {
+            "id": "8c421cd7-12f2-4d8a-977b-8097a2e3e756",
+            "nombre": "Sofia",
+            "motivo": "Consulta General",
+            "monto": 200,
+            "estado": "finalizado",
+            "hora_creacion": "16:32",
+            "hora_salida": "17:22"
+        },
+        {
+            "id": "e6eb0d4d-2e08-4749-beab-4addb4b8935c",
+            "nombre": "Sandra",
+            "motivo": "Consulta General",
+            "monto": 200,
+            "estado": "espera",
+            "hora_creacion": "17:23",
+            "hora_salida": null
+        },
+        {
+            "id": "156924e7-5612-4892-80c7-5931b87854cd",
+            "nombre": "Daniel",
+            "motivo": "Revisión",
+            "monto": 100,
+            "estado": "espera",
+            "hora_creacion": "17:23",
+            "hora_salida": null
+        },
+        {
+            "id": "5f34de36-0bd1-4990-89f1-e88e901e8184",
+            "nombre": "Lorena",
+            "motivo": "Urgencia",
+            "monto": 500,
+            "estado": "espera",
+            "hora_creacion": "17:23",
+            "hora_salida": null
+        }
+    ],
+    "motivos": [
+        {
+            "nombre": "Consulta General",
+            "monto": 200
+        },
+        {
+            "nombre": "Revisión",
+            "monto": 100
+        },
+        {
+            "nombre": "Urgencia",
+            "monto": 500
+        }
+    ]
+}

@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Turnos Médicos</title>
+    <!-- Referencia local a Tailwind (debe estar en la carpeta /static) -->
+    <script src="/static/tailwindcss.js"></script>
+    <style>
+        /* Animación suave al arrastrar */
+        .dragging { opacity: 0.5; border: 2px dashed #4F46E5; }
+        .column { min-height: 500px; transition: background-color 0.2s; }
+        .column-hover { background-color: #F3F4F6; }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen p-5 font-sans">
+
+    <div class="max-w-7xl mx-auto">
+        <div class="mb-8 flex justify-between items-center bg-white p-4 rounded-lg shadow">
+            <h1 class="text-2xl font-bold text-gray-700">🩺 Control de Turnos</h1>
+            <div class="flex gap-2">
+                <input type="text" id="nombreInput" placeholder="Nombre Paciente" class="border p-2 rounded w-64">
+                <select id="motivoSelect" class="border p-2 rounded w-64 bg-white"></select>
+                <button onclick="agregarPaciente()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-bold">+ Nuevo Turno</button>
+                <button onclick="toggleModal()" class="bg-gray-200 text-gray-600 px-3 py-2 rounded hover:bg-gray-300" title="Configurar Motivos">⚙️</button>
+            </div>
+        </div>
+
+        
+        <div class="grid grid-cols-3 gap-6">
+            
+            <div class="bg-white p-4 rounded-xl shadow-lg border-t-4 border-yellow-400">
+                <h2 class="text-lg font-bold mb-4 flex justify-between">
+                    En Sala de Espera <span id="count-espera" class="bg-gray-200 px-2 rounded text-sm">0</span>
+                </h2>
+                <div id="espera" class="column space-y-3" ondrop="drop(event, 'espera')" ondragover="allowDrop(event)">
+                    </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-lg border-t-4 border-green-500">
+                <h2 class="text-lg font-bold mb-4 flex justify-between">
+                    En Consulta Médica <span id="count-consulta" class="bg-gray-200 px-2 rounded text-sm">0</span>
+                </h2>
+                <div id="consulta" class="column space-y-3" ondrop="drop(event, 'consulta')" ondragover="allowDrop(event)">
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-lg border-t-4 border-gray-400">
+                <h2 class="text-lg font-bold mb-4 flex justify-between items-center">
+                    <span>Finalizado / Salida <span id="count-finalizado" class="bg-gray-200 px-2 rounded text-sm">0</span></span>
+                    <button onclick="exportarExcel()" class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 shadow" title="Descargar Excel">📥 Excel</button>
+                </h2>
+                <div id="finalizado" class="column space-y-3" ondrop="drop(event, 'finalizado')" ondragover="allowDrop(event)">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Configuración -->
+    <div id="modalConfig" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex justify-center items-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-96">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Configurar Motivos y Precios</h3>
+            <ul id="listaMotivos" class="mb-4 space-y-2 max-h-60 overflow-y-auto">
+                <!-- Lista dinámica -->
+            </ul>
+            <div class="flex gap-2 mb-4 border-t pt-4">
+                <input id="nuevoMotivoNombre" placeholder="Nombre (ej: Consulta)" class="border p-2 w-full text-sm rounded">
+                <input id="nuevoMotivoMonto" type="number" placeholder="$" class="border p-2 w-24 text-sm rounded">
+                <button onclick="guardarMotivo()" class="bg-green-500 text-white px-3 rounded hover:bg-green-600 font-bold">+</button>
+            </div>
+            <button onclick="toggleModal()" class="w-full bg-gray-200 p-2 rounded hover:bg-gray-300 text-gray-700">Cerrar</button>
+        </div>
+    </div>
+
+    <script>
+        // Al servir el HTML desde el mismo backend, la URL base es vacía
+        const API_URL = "";
+
+        const coloresPorEstado = {
+            'espera': 'border-yellow-400 hover:bg-yellow-50',
+            'consulta': 'border-green-500 hover:bg-green-50',
+            'finalizado': 'border-gray-400 hover:bg-gray-50'
+        };
+
+        // Cargar datos al iniciar
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarTurnos();
+            cargarMotivos();
+            // Actualizar automáticamente cada 5 segundos
+            setInterval(() => {
+                if (!isDragging) cargarTurnos();
+            }, 5000);
+        });
+
+        let idsConocidos = new Set();
+        let primerCarga = true;
+        let isDragging = false; // Para evitar recargar mientras arrastras
+
+        async function cargarTurnos() {
+            const res = await fetch(`${API_URL}/turnos`);
+            const datos = await res.json();
+            
+            // Lógica para detectar nuevos pacientes y sonar DingDong
+            const nuevosIds = new Set(datos.map(p => p.id));
+            // Si hay alguien en 'espera' que no conocíamos antes...
+            const hayNuevos = datos.some(p => p.estado === 'espera' && !idsConocidos.has(p.id));
+            
+            if (hayNuevos && !primerCarga) {
+                playDingDong();
+            }
+            
+            // Actualizar memoria de IDs
+            idsConocidos = nuevosIds;
+            primerCarga = false;
+
+            // Limpiar columnas
+            ['espera', 'consulta', 'finalizado'].forEach(id => document.getElementById(id).innerHTML = '');
+
+            datos.forEach(paciente => crearTarjetaHTML(paciente));
+            actualizarContadores();
+        }
+
+        // --- Generador de Sonido (Sintetizador) ---
+        function playDingDong() {
+            // Crear contexto de audio
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            
+            const audioCtx = new AudioContext();
+            
+            // Función auxiliar para tocar un tono
+            function playTone(freq, time, duration) {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.value = freq;
+                osc.type = 'sine'; // Onda senoidal suave
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(time);
+                gain.gain.setValueAtTime(0.5, time);
+                gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
+                osc.stop(time + duration);
+            }
+
+            const now = audioCtx.currentTime;
+            playTone(800, now, 1.0);       // Ding (Agudo)
+            playTone(600, now + 0.6, 1.5); // Dong (Grave)
+        }
+
+        // --- Lógica de Configuración ---
+        let motivosCache = [];
+
+        function toggleModal() {
+            const modal = document.getElementById('modalConfig');
+            modal.classList.toggle('hidden');
+        }
+
+        async function cargarMotivos() {
+            const res = await fetch(`${API_URL}/config/motivos`);
+            motivosCache = await res.json();
+            
+            // Llenar Select Principal
+            const select = document.getElementById('motivoSelect');
+            select.innerHTML = motivosCache.map(m => `<option value="${m.nombre}" data-monto="${m.monto}">${m.nombre} ($${m.monto})</option>`).join('');
+
+            // Llenar Lista del Modal
+            const lista = document.getElementById('listaMotivos');
+            lista.innerHTML = motivosCache.map(m => `
+                <li class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span>${m.nombre} <b class="text-green-600">$${m.monto}</b></span>
+                    <button onclick="borrarMotivo('${m.nombre}')" class="text-red-500 hover:text-red-700 font-bold">✕</button>
+                </li>
+            `).join('');
+        }
+
+        async function guardarMotivo() {
+            const nombre = document.getElementById('nuevoMotivoNombre').value;
+            const monto = document.getElementById('nuevoMotivoMonto').value;
+            if(!nombre || !monto) return;
+
+            await fetch(`${API_URL}/config/motivos`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nombre, monto: parseInt(monto) })
+            });
+            
+            document.getElementById('nuevoMotivoNombre').value = '';
+            document.getElementById('nuevoMotivoMonto').value = '';
+            cargarMotivos();
+        }
+
+        async function borrarMotivo(nombre) {
+            if(!confirm(`¿Borrar "${nombre}"?`)) return;
+            await fetch(`${API_URL}/config/motivos/${nombre}`, { method: 'DELETE' });
+            cargarMotivos();
+        }
+
+        async function agregarPaciente() {
+            const nombre = document.getElementById('nombreInput').value;
+            const select = document.getElementById('motivoSelect');
+            const motivo = select.value;
+            const monto = select.options[select.selectedIndex].getAttribute('data-monto');
+
+            if(!nombre) return alert("Falta nombre");
+
+            const res = await fetch(`${API_URL}/turnos`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ nombre, motivo, monto: parseInt(monto) })
+            });
+            
+            if(res.ok) {
+                document.getElementById('nombreInput').value = '';
+                cargarTurnos(); // Recargar tablero
+            }
+        }
+
+        async function eliminarPaciente(id) {
+            if(!confirm("¿Eliminar este turno permanentemente?")) return;
+            
+            const res = await fetch(`${API_URL}/turnos/${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                document.getElementById(id).remove();
+                actualizarContadores();
+            }
+        }
+
+        function exportarExcel() {
+            window.location.href = `${API_URL}/exportar/finalizados`;
+        }
+
+        function calcularTiempoTotal(inicio, fin) {
+            if (!inicio || !fin) return '';
+            const [h1, m1] = inicio.split(':').map(Number);
+            const [h2, m2] = fin.split(':').map(Number);
+            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (diff < 0) diff += 24 * 60; // Ajuste por si pasa de medianoche
+            const h = Math.floor(diff / 60);
+            const m = diff % 60;
+            return `${h}h ${m}m`;
+        }
+
+        function crearTarjetaHTML(paciente) {
+            const tarjeta = document.createElement('div');
+            const colores = coloresPorEstado[paciente.estado] || 'border-blue-400 hover:bg-blue-50';
+            tarjeta.className = `bg-gray-50 p-3 rounded shadow cursor-move border-l-4 ${colores}`;
+            tarjeta.draggable = true;
+            tarjeta.id = paciente.id;
+            tarjeta.dataset.monto = paciente.monto;
+            
+            let infoExtra = '';
+            if (paciente.estado === 'finalizado' && paciente.hora_salida) {
+                const duracion = calcularTiempoTotal(paciente.hora_creacion, paciente.hora_salida);
+                infoExtra = `<div class="mt-2 pt-2 border-t border-gray-200 text-xs flex justify-between text-gray-600"><span>🏁 Salida: ${paciente.hora_salida}</span><span class="font-bold text-blue-600">⏱ Total: ${duracion}</span></div>`;
+            }
+
+            tarjeta.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div class="font-bold text-gray-800">${paciente.nombre}</div>
+                    <button onclick="eliminarPaciente('${paciente.id}')" class="text-red-400 hover:text-red-600 font-bold px-1">✕</button>
+                </div>
+                <div class="flex justify-between text-sm mt-1">
+                    <span class="text-gray-600">${paciente.motivo}</span>
+                    <span class="bg-green-100 text-green-800 px-2 rounded-full text-xs font-bold flex items-center">$${paciente.monto}</span>
+                </div>
+                <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
+                    <span>ID: ${paciente.id.slice(0,4)}</span>
+                    <span class="font-semibold">🕒 ${paciente.hora_creacion || '--:--'}</span>
+                </div>
+                ${infoExtra}
+            `;
+
+            // Eventos Drag & Drop Nativos HTML5
+            tarjeta.ondragstart = (e) => {
+                e.dataTransfer.setData("text/plain", paciente.id);
+                e.target.classList.add('dragging');
+                isDragging = true; // Bloquear recarga automática
+            };
+            tarjeta.ondragend = (e) => {
+                e.target.classList.remove('dragging');
+                isDragging = false; // Liberar recarga
+            };
+
+            document.getElementById(paciente.estado).appendChild(tarjeta);
+        }
+
+        // Lógica de Soltar (Drop)
+        function allowDrop(e) { e.preventDefault(); }
+
+        async function drop(e, nuevoEstado) {
+            e.preventDefault();
+            const idPaciente = e.dataTransfer.getData("text/plain");
+            
+            // Actualizar visualmente primero (Optimistic UI)
+            const tarjeta = document.getElementById(idPaciente);
+            
+            // Actualizar color al soltar
+            const colores = coloresPorEstado[nuevoEstado] || 'border-blue-400 hover:bg-blue-50';
+            tarjeta.className = `bg-gray-50 p-3 rounded shadow cursor-move border-l-4 ${colores}`;
+
+            document.getElementById(nuevoEstado).appendChild(tarjeta);
+
+            // Actualizar en Backend
+            const res = await fetch(`${API_URL}/turnos/${idPaciente}/${nuevoEstado}`, { method: 'PUT' });
+            if (res.ok && nuevoEstado === 'finalizado') {
+                // Si finalizamos, recargamos la tarjeta para mostrar la hora calculada por el servidor
+                const pacienteActualizado = await res.json();
+                tarjeta.remove();
+                crearTarjetaHTML(pacienteActualizado);
+            }
+            actualizarContadores();
+        }
+
+        function actualizarContadores() {
+            ['espera', 'consulta', 'finalizado'].forEach(estado => {
+                const container = document.getElementById(estado);
+                const count = container.children.length;
+                
+                if (estado === 'finalizado') {
+                    const total = Array.from(container.children).reduce((sum, card) => sum + (parseInt(card.dataset.monto) || 0), 0);
+                    document.getElementById(`count-${estado}`).innerText = `${count} ($${total})`;
+                } else {
+                    document.getElementById(`count-${estado}`).innerText = count;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
