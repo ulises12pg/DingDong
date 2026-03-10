@@ -1,330 +1,377 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Turnos Médicos</title>
-    <!-- Referencia local a Tailwind (debe estar en la carpeta /static) -->
+    <title>DingDong | Medical Hub</title>
     <script src="/static/tailwindcss.js"></script>
     <style>
-        /* Animación suave al arrastrar */
-        .dragging { opacity: 0.5; border: 2px dashed #4F46E5; }
-        .column { min-height: 500px; transition: background-color 0.2s; }
-        .column-hover { background-color: #F3F4F6; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            /* Slate 100 */
+            color: #1e293b;
+            /* Slate 800 */
+        }
+
+        .macos-window {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .macos-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            /* Slate 200 */
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .macos-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+            border-color: #94a3b8;
+            /* Slate 400 */
+        }
+
+        .macos-button {
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+            border: 1px solid #e2e8f0;
+            transition: all 0.15s ease;
+        }
+
+        .macos-button:hover {
+            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+            border-color: #cbd5e1;
+        }
+
+        .macos-button:active {
+            background: #f1f5f9;
+            transform: scale(0.97);
+        }
+
+        .macos-input {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            transition: border-color 0.2s ease;
+        }
+
+        .macos-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            ring: 2px solid #3b82f644;
+        }
+
+        /* Degradados sutiles para los bordes de estado */
+        .status-espera {
+            border-bottom: 3px solid #f59e0b;
+        }
+
+        .status-consulta {
+            border-bottom: 3px solid #10b981;
+        }
+
+        .status-finalizado {
+            border-bottom: 3px solid #64748b;
+        }
+
+        .dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .column {
+            min-height: 70vh;
+            border-radius: 1rem;
+            background: rgba(248, 250, 252, 0.5);
+            /* Slate 50 */
+            border: 1px dashed #cbd5e1;
+            transition: background 0.2s ease;
+        }
+
+        .column-active {
+            background: rgba(226, 232, 240, 0.8);
+            border-style: solid;
+        }
+
+        /* Scrollbar minimalista */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
     </style>
 </head>
-<body class="bg-gray-100 h-screen p-5 font-sans">
+
+<body class="min-h-screen p-8 text-slate-800">
 
     <div class="max-w-7xl mx-auto">
-        <div class="mb-8 flex justify-between items-center bg-white p-4 rounded-lg shadow">
-            <h1 class="text-2xl font-bold text-gray-700">🩺 Control de Turnos</h1>
-            <div class="flex gap-2">
-                <input type="text" id="nombreInput" placeholder="Nombre Paciente" class="border p-2 rounded w-64">
-                <select id="motivoSelect" class="border p-2 rounded w-64 bg-white"></select>
-                <button onclick="agregarPaciente()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 font-bold">+ Nuevo Turno</button>
-                <button onclick="toggleModal()" class="bg-gray-200 text-gray-600 px-3 py-2 rounded hover:bg-gray-300" title="Configurar Motivos">⚙️</button>
+        <!-- Barra Superior Tipo macOS -->
+        <header
+            class="macos-window p-4 rounded-2xl mb-10 flex flex-col lg:flex-row justify-between items-center gap-4 sticky top-4 z-40">
+            <div class="flex items-center gap-3">
+                <div class="flex gap-1.5 px-2">
+                    <div class="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                </div>
+                <div class="h-6 w-px bg-slate-200 mx-2"></div>
+                <h1 class="text-xl font-bold tracking-tight text-slate-700">DingDong</h1>
+            </div>
+
+            <div class="flex items-center gap-2 flex-1 max-w-2xl px-4">
+                <input type="text" id="nombreInput" placeholder="Nombre Paciente"
+                    class="macos-input px-4 py-2 rounded-xl text-sm flex-1 outline-none">
+                <select id="motivoSelect"
+                    class="macos-input px-3 py-2 rounded-xl text-sm outline-none bg-white cursor-pointer"></select>
+                <button onclick="agregarPaciente()"
+                    class="macos-button px-5 py-2 rounded-xl text-sm font-semibold text-slate-700 shadow-sm transition-all active:scale-95">+
+                    Nuevo Turno</button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <a href="/publico" target="_blank" class="macos-button p-2.5 rounded-xl text-lg"
+                    title="Pantalla TV">📺</a>
+                <button onclick="toggleModal()" class="macos-button p-2.5 rounded-xl text-lg"
+                    title="Configuración">⚙️</button>
+            </div>
+        </header>
+
+        <!-- Stats - Minimalist Layout -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            <div class="bg-white/80 backdrop-blur p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Caja del día</p>
+                <div class="flex justify-between items-end">
+                    <p id="stat-ingresos" class="text-3xl font-light text-slate-800">$0</p>
+                    <span class="text-xs font-medium text-slate-400">MXN</span>
+                </div>
+            </div>
+            <div class="bg-white/80 backdrop-blur p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Atendidos</p>
+                <p id="stat-atendidos" class="text-3xl font-light text-slate-800">0</p>
+            </div>
+            <div class="bg-white/80 backdrop-blur p-6 rounded-2xl border border-slate-200/60 shadow-sm">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">En espera</p>
+                <p id="stat-espera" class="text-3xl font-light text-slate-800">0</p>
             </div>
         </div>
 
-        
-        <div class="grid grid-cols-3 gap-6">
-            
-            <div class="bg-white p-4 rounded-xl shadow-lg border-t-4 border-yellow-400">
-                <h2 class="text-lg font-bold mb-4 flex justify-between">
-                    En Sala de Espera <span id="count-espera" class="bg-gray-200 px-2 rounded text-sm">0</span>
-                </h2>
-                <div id="espera" class="column space-y-3" ondrop="drop(event, 'espera')" ondragover="allowDrop(event)">
-                    </div>
-            </div>
-
-            <div class="bg-white p-4 rounded-xl shadow-lg border-t-4 border-green-500">
-                <h2 class="text-lg font-bold mb-4 flex justify-between">
-                    En Consulta Médica <span id="count-consulta" class="bg-gray-200 px-2 rounded text-sm">0</span>
-                </h2>
-                <div id="consulta" class="column space-y-3" ondrop="drop(event, 'consulta')" ondragover="allowDrop(event)">
+        <!-- Board Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Espega -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center justify-between px-2">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sala de Espera</h2>
+                    <span id="count-espera"
+                        class="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-            </div>
+                <div id="espera" class="column p-4 space-y-4 overflow-y-auto" ondrop="drop(event, 'espera')"
+                    ondragover="allowDrop(event)" ondragenter="this.classList.add('column-active')"
+                    ondragleave="this.classList.remove('column-active')"></div>
+            </section>
 
-            <div class="bg-white p-4 rounded-xl shadow-lg border-t-4 border-gray-400">
-                <h2 class="text-lg font-bold mb-4 flex justify-between items-center">
-                    <span>Finalizado / Salida <span id="count-finalizado" class="bg-gray-200 px-2 rounded text-sm">0</span></span>
-                    <button onclick="exportarExcel()" class="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 shadow" title="Descargar Excel">📥 Excel</button>
-                </h2>
-                <div id="finalizado" class="column space-y-3" ondrop="drop(event, 'finalizado')" ondragover="allowDrop(event)">
+            <!-- Consulta -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center justify-between px-2">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">En Consulta</h2>
+                    <span id="count-consulta"
+                        class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-            </div>
+                <div id="consulta" class="column p-4 space-y-4 overflow-y-auto" ondrop="drop(event, 'consulta')"
+                    ondragover="allowDrop(event)" ondragenter="this.classList.add('column-active')"
+                    ondragleave="this.classList.remove('column-active')"></div>
+            </section>
+
+            <!-- Finalizado -->
+            <section class="flex flex-col gap-4">
+                <div class="flex items-center justify-between px-2">
+                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Finalizados</h2>
+                    <button onclick="exportarExcel()"
+                        class="text-[10px] font-bold text-slate-400 hover:text-slate-600 underline decoration-slate-200 underline-offset-4 decoration-2">Exportar</button>
+                </div>
+                <div id="finalizado" class="column p-4 space-y-4 overflow-y-auto" ondrop="drop(event, 'finalizado')"
+                    ondragover="allowDrop(event)" ondragenter="this.classList.add('column-active')"
+                    ondragleave="this.classList.remove('column-active')"></div>
+            </section>
         </div>
     </div>
 
-    <!-- Modal de Configuración -->
-    <div id="modalConfig" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden flex justify-center items-center z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-96">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Configurar Motivos y Precios</h3>
-            <ul id="listaMotivos" class="mb-4 space-y-2 max-h-60 overflow-y-auto">
-                <!-- Lista dinámica -->
-            </ul>
-            <div class="flex gap-2 mb-4 border-t pt-4">
-                <input id="nuevoMotivoNombre" placeholder="Nombre (ej: Consulta)" class="border p-2 w-full text-sm rounded">
-                <input id="nuevoMotivoMonto" type="number" placeholder="$" class="border p-2 w-24 text-sm rounded">
-                <button onclick="guardarMotivo()" class="bg-green-500 text-white px-3 rounded hover:bg-green-600 font-bold">+</button>
+    <!-- Modal Config macOS Style -->
+    <div id="modalConfig"
+        class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-slate-100">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-slate-800">Preferencias</h3>
+                <button onclick="toggleModal()" class="text-slate-400 hover:text-slate-600">✕</button>
             </div>
-            <button onclick="toggleModal()" class="w-full bg-gray-200 p-2 rounded hover:bg-gray-300 text-gray-700">Cerrar</button>
+
+            <div class="space-y-4 mb-8">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Motivos registrados</p>
+                <div id="listaMotivos" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
+                <p class="text-[10px] font-bold text-slate-400 uppercase mb-3">Añadir Motivo</p>
+                <div class="space-y-3">
+                    <input id="nuevoMotivoNombre" placeholder="Nombre del servicio"
+                        class="macos-input bg-white w-full px-4 py-2 rounded-xl text-sm outline-none">
+                    <div class="flex gap-2">
+                        <input id="nuevoMotivoMonto" type="number" placeholder="Precio $"
+                            class="macos-input bg-white flex-1 px-4 py-2 rounded-xl text-sm outline-none">
+                        <button onclick="guardarMotivo()"
+                            class="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-700 active:scale-95 transition-all">OK</button>
+                    </div>
+                </div>
+            </div>
+            <button onclick="toggleModal()"
+                class="w-full text-sm font-bold text-slate-400 py-2 hover:text-slate-600">Listo</button>
         </div>
     </div>
 
     <script>
-        // Al servir el HTML desde el mismo backend, la URL base es vacía
         const API_URL = "";
+        let idsConocidos = new Set();
+        let primerCarga = true;
+        let isDragging = false;
 
-        const coloresPorEstado = {
-            'espera': 'border-yellow-400 hover:bg-yellow-50',
-            'consulta': 'border-green-500 hover:bg-green-50',
-            'finalizado': 'border-gray-400 hover:bg-gray-50'
-        };
-
-        // Cargar datos al iniciar
         document.addEventListener('DOMContentLoaded', () => {
             cargarTurnos();
             cargarMotivos();
-            // Actualizar automáticamente cada 5 segundos
-            setInterval(() => {
-                if (!isDragging) cargarTurnos();
-            }, 5000);
+            cargarStats();
+            conectarWebSocket();
         });
 
-        let idsConocidos = new Set();
-        let primerCarga = true;
-        let isDragging = false; // Para evitar recargar mientras arrastras
+        function conectarWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+            const socket = new WebSocket(wsUrl);
+            socket.onmessage = (e) => {
+                const data = JSON.parse(e.data);
+                if (data.type === 'update_turnos' && !isDragging) { cargarTurnos(); cargarStats(); }
+                if (data.type === 'update_motivos') cargarMotivos();
+            };
+            socket.onclose = () => setTimeout(conectarWebSocket, 3000);
+        }
 
         async function cargarTurnos() {
             const res = await fetch(`${API_URL}/turnos`);
             const datos = await res.json();
-            
-            // Lógica para detectar nuevos pacientes y sonar DingDong
-            const nuevosIds = new Set(datos.map(p => p.id));
-            // Si hay alguien en 'espera' que no conocíamos antes...
             const hayNuevos = datos.some(p => p.estado === 'espera' && !idsConocidos.has(p.id));
-            
-            if (hayNuevos && !primerCarga) {
-                playDingDong();
-            }
-            
-            // Actualizar memoria de IDs
-            idsConocidos = nuevosIds;
+            if (hayNuevos && !primerCarga) playDingDong();
+            idsConocidos = new Set(datos.map(p => p.id));
             primerCarga = false;
-
-            // Limpiar columnas
             ['espera', 'consulta', 'finalizado'].forEach(id => document.getElementById(id).innerHTML = '');
-
-            datos.forEach(paciente => crearTarjetaHTML(paciente));
+            datos.forEach(p => crearTarjetaHTML(p));
             actualizarContadores();
         }
 
-        // --- Generador de Sonido (Sintetizador) ---
-        function playDingDong() {
-            // Crear contexto de audio
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (!AudioContext) return;
-            
-            const audioCtx = new AudioContext();
-            
-            // Función auxiliar para tocar un tono
-            function playTone(freq, time, duration) {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.frequency.value = freq;
-                osc.type = 'sine'; // Onda senoidal suave
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                
-                osc.start(time);
-                gain.gain.setValueAtTime(0.5, time);
-                gain.gain.exponentialRampToValueAtTime(0.01, time + duration);
-                osc.stop(time + duration);
-            }
-
-            const now = audioCtx.currentTime;
-            playTone(800, now, 1.0);       // Ding (Agudo)
-            playTone(600, now + 0.6, 1.5); // Dong (Grave)
+        async function cargarStats() {
+            const res = await fetch(`${API_URL}/stats`);
+            const stats = await res.json();
+            document.getElementById('stat-ingresos').innerText = `$${stats.ingresos.toLocaleString()}`;
+            document.getElementById('stat-atendidos').innerText = stats.atendidos;
+            document.getElementById('stat-espera').innerText = stats.espera;
         }
 
-        // --- Lógica de Configuración ---
-        let motivosCache = [];
+        function crearTarjetaHTML(paciente) {
+            const tarjeta = document.createElement('div');
+            tarjeta.className = `macos-card p-4 rounded-xl shadow-sm border-l-4 status-${paciente.estado} cursor-grab active:cursor-grabbing group transition-all`;
+            tarjeta.draggable = true;
+            tarjeta.id = paciente.id;
 
-        function toggleModal() {
-            const modal = document.getElementById('modalConfig');
-            modal.classList.toggle('hidden');
+            let duracion = paciente.estado === 'finalizado' ? `<p class="text-[10px] font-bold text-slate-400 mt-2 bg-slate-50 inline-block px-2 rounded-md">⏱ ${calcularTiempoTotal(paciente.hora_creacion, paciente.hora_salida)}</p>` : '';
+
+            tarjeta.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold text-slate-700 text-sm">${paciente.nombre}</h4>
+                        <p class="text-[10px] font-medium text-slate-400 uppercase tracking-tighter mt-1">${paciente.motivo}</p>
+                    </div>
+                    <button onclick="eliminarPaciente('${paciente.id}')" class="text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">✕</button>
+                </div>
+                <div class="flex justify-between items-center mt-4">
+                    <span class="text-[10px] font-bold text-slate-500">🕒 ${paciente.hora_creacion}</span>
+                    <span class="text-xs font-black text-slate-800">$${paciente.monto}</span>
+                </div>
+                ${duracion}
+            `;
+
+            tarjeta.ondragstart = (e) => { e.dataTransfer.setData("text", paciente.id); tarjeta.classList.add('dragging'); isDragging = true; };
+            tarjeta.ondragend = () => { tarjeta.classList.remove('dragging'); isDragging = false; };
+            document.getElementById(paciente.estado).appendChild(tarjeta);
+        }
+
+        async function drop(e, estado) {
+            e.preventDefault();
+            const id = e.dataTransfer.getData("text");
+            const res = await fetch(`${API_URL}/turnos/${id}/${estado}`, { method: 'PUT' });
+            if (res.ok) { cargarTurnos(); cargarStats(); }
+            document.querySelectorAll('.column').forEach(c => c.classList.remove('column-active'));
+        }
+
+        function allowDrop(e) { e.preventDefault(); }
+        function toggleModal() { document.getElementById('modalConfig').classList.toggle('hidden'); }
+
+        async function agregarPaciente() {
+            const nombre = document.getElementById('nombreInput').value;
+            const select = document.getElementById('motivoSelect');
+            const motivo = select.value;
+            const monto = select.options[select.selectedIndex]?.getAttribute('data-monto');
+            if (!nombre) return;
+            const res = await fetch(`${API_URL}/turnos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, motivo, monto: parseInt(monto) })
+            });
+            if (res.ok) { document.getElementById('nombreInput').value = ''; cargarTurnos(); }
         }
 
         async function cargarMotivos() {
             const res = await fetch(`${API_URL}/config/motivos`);
-            motivosCache = await res.json();
-            
-            // Llenar Select Principal
-            const select = document.getElementById('motivoSelect');
-            select.innerHTML = motivosCache.map(m => `<option value="${m.nombre}" data-monto="${m.monto}">${m.nombre} ($${m.monto})</option>`).join('');
-
-            // Llenar Lista del Modal
-            const lista = document.getElementById('listaMotivos');
-            lista.innerHTML = motivosCache.map(m => `
-                <li class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span>${m.nombre} <b class="text-green-600">$${m.monto}</b></span>
-                    <button onclick="borrarMotivo('${m.nombre}')" class="text-red-500 hover:text-red-700 font-bold">✕</button>
-                </li>
+            const motivos = await res.json();
+            document.getElementById('motivoSelect').innerHTML = motivos.map(m => `<option value="${m.nombre}" data-monto="${m.monto}">${m.nombre}</option>`).join('');
+            document.getElementById('listaMotivos').innerHTML = motivos.map(m => `
+                <div class="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                    <span class="text-xs font-bold text-slate-600">${m.nombre} <b class="text-slate-400 ml-1">$${m.monto}</b></span>
+                    <button onclick="borrarMotivo('${m.nombre}')" class="text-slate-300 hover:text-red-400">✕</button>
+                </div>
             `).join('');
         }
 
         async function guardarMotivo() {
             const nombre = document.getElementById('nuevoMotivoNombre').value;
             const monto = document.getElementById('nuevoMotivoMonto').value;
-            if(!nombre || !monto) return;
-
-            await fetch(`${API_URL}/config/motivos`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ nombre, monto: parseInt(monto) })
-            });
-            
+            if (!nombre || !monto) return;
+            await fetch(`${API_URL}/config/motivos`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre, monto: parseInt(monto) }) });
             document.getElementById('nuevoMotivoNombre').value = '';
             document.getElementById('nuevoMotivoMonto').value = '';
             cargarMotivos();
         }
 
-        async function borrarMotivo(nombre) {
-            if(!confirm(`¿Borrar "${nombre}"?`)) return;
-            await fetch(`${API_URL}/config/motivos/${nombre}`, { method: 'DELETE' });
-            cargarMotivos();
-        }
-
-        async function agregarPaciente() {
-            const nombre = document.getElementById('nombreInput').value;
-            const select = document.getElementById('motivoSelect');
-            const motivo = select.value;
-            const monto = select.options[select.selectedIndex].getAttribute('data-monto');
-
-            if(!nombre) return alert("Falta nombre");
-
-            const res = await fetch(`${API_URL}/turnos`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ nombre, motivo, monto: parseInt(monto) })
-            });
-            
-            if(res.ok) {
-                document.getElementById('nombreInput').value = '';
-                cargarTurnos(); // Recargar tablero
-            }
-        }
-
-        async function eliminarPaciente(id) {
-            if(!confirm("¿Eliminar este turno permanentemente?")) return;
-            
-            const res = await fetch(`${API_URL}/turnos/${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                document.getElementById(id).remove();
-                actualizarContadores();
-            }
-        }
-
-        function exportarExcel() {
-            window.location.href = `${API_URL}/exportar/finalizados`;
-        }
-
-        function calcularTiempoTotal(inicio, fin) {
-            if (!inicio || !fin) return '';
-            const [h1, m1] = inicio.split(':').map(Number);
-            const [h2, m2] = fin.split(':').map(Number);
-            let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
-            if (diff < 0) diff += 24 * 60; // Ajuste por si pasa de medianoche
-            const h = Math.floor(diff / 60);
-            const m = diff % 60;
-            return `${h}h ${m}m`;
-        }
-
-        function crearTarjetaHTML(paciente) {
-            const tarjeta = document.createElement('div');
-            const colores = coloresPorEstado[paciente.estado] || 'border-blue-400 hover:bg-blue-50';
-            tarjeta.className = `bg-gray-50 p-3 rounded shadow cursor-move border-l-4 ${colores}`;
-            tarjeta.draggable = true;
-            tarjeta.id = paciente.id;
-            tarjeta.dataset.monto = paciente.monto;
-            
-            let infoExtra = '';
-            if (paciente.estado === 'finalizado' && paciente.hora_salida) {
-                const duracion = calcularTiempoTotal(paciente.hora_creacion, paciente.hora_salida);
-                infoExtra = `<div class="mt-2 pt-2 border-t border-gray-200 text-xs flex justify-between text-gray-600"><span>🏁 Salida: ${paciente.hora_salida}</span><span class="font-bold text-blue-600">⏱ Total: ${duracion}</span></div>`;
-            }
-
-            tarjeta.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <div class="font-bold text-gray-800">${paciente.nombre}</div>
-                    <button onclick="eliminarPaciente('${paciente.id}')" class="text-red-400 hover:text-red-600 font-bold px-1">✕</button>
-                </div>
-                <div class="flex justify-between text-sm mt-1">
-                    <span class="text-gray-600">${paciente.motivo}</span>
-                    <span class="bg-green-100 text-green-800 px-2 rounded-full text-xs font-bold flex items-center">$${paciente.monto}</span>
-                </div>
-                <div class="flex justify-between items-center mt-2 text-xs text-gray-400">
-                    <span>ID: ${paciente.id.slice(0,4)}</span>
-                    <span class="font-semibold">🕒 ${paciente.hora_creacion || '--:--'}</span>
-                </div>
-                ${infoExtra}
-            `;
-
-            // Eventos Drag & Drop Nativos HTML5
-            tarjeta.ondragstart = (e) => {
-                e.dataTransfer.setData("text/plain", paciente.id);
-                e.target.classList.add('dragging');
-                isDragging = true; // Bloquear recarga automática
-            };
-            tarjeta.ondragend = (e) => {
-                e.target.classList.remove('dragging');
-                isDragging = false; // Liberar recarga
-            };
-
-            document.getElementById(paciente.estado).appendChild(tarjeta);
-        }
-
-        // Lógica de Soltar (Drop)
-        function allowDrop(e) { e.preventDefault(); }
-
-        async function drop(e, nuevoEstado) {
-            e.preventDefault();
-            const idPaciente = e.dataTransfer.getData("text/plain");
-            
-            // Actualizar visualmente primero (Optimistic UI)
-            const tarjeta = document.getElementById(idPaciente);
-            
-            // Actualizar color al soltar
-            const colores = coloresPorEstado[nuevoEstado] || 'border-blue-400 hover:bg-blue-50';
-            tarjeta.className = `bg-gray-50 p-3 rounded shadow cursor-move border-l-4 ${colores}`;
-
-            document.getElementById(nuevoEstado).appendChild(tarjeta);
-
-            // Actualizar en Backend
-            const res = await fetch(`${API_URL}/turnos/${idPaciente}/${nuevoEstado}`, { method: 'PUT' });
-            if (res.ok && nuevoEstado === 'finalizado') {
-                // Si finalizamos, recargamos la tarjeta para mostrar la hora calculada por el servidor
-                const pacienteActualizado = await res.json();
-                tarjeta.remove();
-                crearTarjetaHTML(pacienteActualizado);
-            }
-            actualizarContadores();
-        }
-
-        function actualizarContadores() {
-            ['espera', 'consulta', 'finalizado'].forEach(estado => {
-                const container = document.getElementById(estado);
-                const count = container.children.length;
-                
-                if (estado === 'finalizado') {
-                    const total = Array.from(container.children).reduce((sum, card) => sum + (parseInt(card.dataset.monto) || 0), 0);
-                    document.getElementById(`count-${estado}`).innerText = `${count} ($${total})`;
-                } else {
-                    document.getElementById(`count-${estado}`).innerText = count;
-                }
-            });
+        async function borrarMotivo(n) { if (confirm(`Eliminar ${n}?`)) await fetch(`${API_URL}/config/motivos/${n}`, { method: 'DELETE' }); cargarMotivos(); }
+        async function eliminarPaciente(id) { if (confirm("¿Eliminar?")) await fetch(`${API_URL}/turnos/${id}`, { method: 'DELETE' }); }
+        function exportarExcel() { window.location.href = `${API_URL}/exportar/finalizados`; }
+        function a(i, f) { if (!i || !f) return '0m'; const [h1, m1] = i.split(':').map(Number), [h2, m2] = f.split(':').map(Number); let d = (h2 * 60 + m2) - (h1 * 60 + m1); if (d < 0) d += 1440; return d > 60 ? `${Math.floor(d / 60)}h ${d % 60}m` : `${d}m`; }
+        function calcularTiempoTotal(i, f) { return a(i, f) }
+        function actualizarContadores() { ['espera', 'consulta', 'finalizado'].forEach(e => document.getElementById(`count-${e}`).innerText = document.getElementById(e).children.length); }
+        function playDingDong() {
+            const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; const audioCtx = new AudioContext();
+            function p(f, t, d) { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination); o.start(t); g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.01, t + d); o.stop(t + d); }
+            const n = audioCtx.currentTime; p(880, n, 0.6); p(660, n + 0.4, 1);
         }
     </script>
 </body>
+
 </html>

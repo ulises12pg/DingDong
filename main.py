@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sys
+import sqlite3
 from PIL import Image, ImageDraw
 import pystray
 
@@ -40,9 +41,86 @@ class Paciente(BaseModel):
     hora_creacion: Optional[str] = None
     hora_salida: Optional[str] = None
 
-# "Base de datos" en memoria
-db: List[Paciente] = []
-motivos_db: List[Motivo] = []
+# --- Base de Datos SQLite ---
+DB_SQLITE = "dingdong.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_SQLITE)
+    cursor = conn.cursor()
+    # Tabla de Pacientes
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS pacientes (
+            id TEXT PRIMARY KEY,
+            nombre TEXT,
+            motivo TEXT,
+            monto INTEGER,
+            estado TEXT,
+            hora_creacion TEXT,
+            hora_salida TEXT
+        )
+    ''')
+    # Tabla de Motivos
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS motivos (
+            nombre TEXT PRIMARY KEY,
+            monto INTEGER
+        )
+    ''')
+    conn.commit()
+    
+    # Migración desde JSON si existe
+    if os.path.exists("database.json"):
+        try:
+            with open("database.json", "r", encoding="utf-8") as f:
+                datos = json.load(f)
+                # Migrar motivos
+                for m in datos.get("motivos", []):
+                    cursor.execute("INSERT OR IGNORE INTO motivos (nombre, monto) VALUES (?, ?)", (m['nombre'], m['monto']))
+                # Migrar pacientes
+                for p in datos.get("pacientes", []):
+                    cursor.execute("INSERT OR IGNORE INTO pacientes (id, nombre, motivo, monto, estado, hora_creacion, hora_salida) VALUES (?, ?, ?, ?, ?, ?, ?)", 
+                                 (p['id'], p['nombre'], p['motivo'], p.get('monto', 0), p['estado'], p['hora_creacion'], p['hora_salida']))
+            conn.commit()
+            print("Migración de JSON a SQLite completada.")
+        except Exception as e:
+            print(f"Error en migración: {e}")
+    
+    # Valores por defecto si no hay motivos
+    cursor.execute("SELECT COUNT(*) FROM motivos")
+    if cursor.fetchone()[0] == 0:
+        default_motivos = [("Consulta General", 200), ("Revisión", 100), ("Urgencia", 500)]
+        cursor.executemany("INSERT INTO motivos (nombre, monto) VALUES (?, ?)", default_motivos)
+        conn.commit()
+    
+    conn.close()
+
+init_db()
+
+def get_db_conn():
+    conn = sqlite3.connect(DB_SQLITE)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# --- Manejador de WebSockets ---
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            try:
+                await connection.send_json(message)
+            except:
+                pass # Manejar conexiones muertas silenciosamente
+
+manager = ConnectionManager()
 
 # Función para obtener rutas de recursos (necesario para PyInstaller)
 def resource_path(relative_path):
@@ -52,34 +130,6 @@ def resource_path(relative_path):
     except Exception:
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
-
-DB_FILE = "database.json" # La DB se guarda junto al ejecutable, no dentro
-
-def guardar_datos():
-    datos = {
-        "pacientes": [p.dict() for p in db],
-        "motivos": [m.dict() for m in motivos_db]
-    }
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(datos, f, indent=4, ensure_ascii=False)
-
-def cargar_datos():
-    global db, motivos_db
-    if os.path.exists(DB_FILE):
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            datos = json.load(f)
-            db = [Paciente(**p) for p in datos.get("pacientes", [])]
-            motivos_db = [Motivo(**m) for m in datos.get("motivos", [])]
-    
-    if not motivos_db:
-        motivos_db = [
-            Motivo(nombre="Consulta General", monto=200),
-            Motivo(nombre="Revisión", monto=100),
-            Motivo(nombre="Urgencia", monto=500)
-        ]
-        guardar_datos()
-
-cargar_datos()
 
 # --- Servir Archivos Estáticos y Frontend ---
 # Montamos la carpeta static para servir tailwindcss.js localmente
@@ -93,52 +143,122 @@ def servir_frontend():
     with open(index_path, "r", encoding="utf-8") as f:
         return f.read()
 
+@app.get("/publico", response_class=HTMLResponse)
+def servir_publico():
+    publico_path = resource_path("publico.html")
+    with open(publico_path, "r", encoding="utf-8") as f:
+        return f.read()
+
 @app.get("/turnos", response_model=List[Paciente])
 def obtener_turnos():
-    return db
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pacientes")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_text() # Mantener conexión viva
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
 
 @app.post("/turnos", response_model=Paciente)
-def crear_turno(paciente: Paciente):
+async def crear_turno(paciente: Paciente):
     paciente.id = str(uuid.uuid4())
     paciente.hora_creacion = datetime.now().strftime("%H:%M")
-    db.append(paciente)
-    guardar_datos()
+    
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO pacientes (id, nombre, motivo, monto, estado, hora_creacion, hora_salida)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (paciente.id, paciente.nombre, paciente.motivo, paciente.monto, paciente.estado, paciente.hora_creacion, paciente.hora_salida))
+    conn.commit()
+    conn.close()
+    
+    await manager.broadcast({"type": "update_turnos"})
     return paciente
 
 @app.put("/turnos/{id_paciente}/{nuevo_estado}")
-def mover_turno(id_paciente: str, nuevo_estado: str):
-    for p in db:
-        if p.id == id_paciente:
-            p.estado = nuevo_estado
-            if nuevo_estado == "finalizado":
-                p.hora_salida = datetime.now().strftime("%H:%M")
-            guardar_datos()
-            return p
-    raise HTTPException(status_code=404, detail="Paciente no encontrado")
+async def mover_turno(id_paciente: str, nuevo_estado: str):
+    hora_salida = None
+    if nuevo_estado == "finalizado":
+        hora_salida = datetime.now().strftime("%H:%M")
+    
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    if hora_salida:
+        cursor.execute("UPDATE pacientes SET estado = ?, hora_salida = ? WHERE id = ?", (nuevo_estado, hora_salida, id_paciente))
+    else:
+        cursor.execute("UPDATE pacientes SET estado = ? WHERE id = ?", (nuevo_estado, id_paciente))
+    
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+    
+    conn.commit()
+    # Obtener el objeto actualizado para retornar
+    cursor.execute("SELECT * FROM pacientes WHERE id = ?", (id_paciente,))
+    updated_p = dict(cursor.fetchone())
+    conn.close()
+    
+    await manager.broadcast({"type": "update_turnos"})
+    return updated_p
 
 @app.delete("/turnos/{id_paciente}")
-def eliminar_turno(id_paciente: str):
-    for i, p in enumerate(db):
-        if p.id == id_paciente:
-            db.pop(i)
-            guardar_datos()
-            return {"mensaje": "Eliminado"}
-    raise HTTPException(status_code=404, detail="Paciente no encontrado")
+async def eliminar_turno(id_paciente: str):
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM pacientes WHERE id = ?", (id_paciente,))
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+    conn.commit()
+    conn.close()
+    
+    await manager.broadcast({"type": "update_turnos"})
+    return {"mensaje": "Eliminado"}
+
+@app.get("/stats")
+def obtener_estadisticas():
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    # Ingresos totales (finalizados)
+    cursor.execute("SELECT SUM(monto) FROM pacientes WHERE estado = 'finalizado'")
+    total_ingresos = cursor.fetchone()[0] or 0
+    # Total pacientes atendidos
+    cursor.execute("SELECT COUNT(*) FROM pacientes WHERE estado = 'finalizado'")
+    total_atendidos = cursor.fetchone()[0] or 0
+    # Pacientes en espera
+    cursor.execute("SELECT COUNT(*) FROM pacientes WHERE estado = 'espera'")
+    total_espera = cursor.fetchone()[0] or 0
+    conn.close()
+    return {
+        "ingresos": total_ingresos,
+        "atendidos": total_atendidos,
+        "espera": total_espera
+    }
 
 @app.get("/exportar/finalizados")
 def exportar_finalizados():
-    # Crear un buffer en memoria para el archivo
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM pacientes WHERE estado = 'finalizado'")
+    rows = cursor.fetchall()
+    conn.close()
+
     output = io.StringIO()
-    output.write('\ufeff') # BOM para que Excel reconozca acentos (UTF-8)
+    output.write('\ufeff') # BOM
     writer = csv.writer(output)
-    
-    # Escribir encabezados
     writer.writerow(["ID", "Nombre", "Motivo", "Monto", "Hora Entrada", "Hora Salida"])
     
-    # Escribir datos filtrados
-    for p in db:
-        if p.estado == "finalizado":
-            writer.writerow([p.id, p.nombre, p.motivo, p.monto, p.hora_creacion, p.hora_salida])
+    for p in rows:
+        writer.writerow([p['id'], p['nombre'], p['motivo'], p['monto'], p['hora_creacion'], p['hora_salida']])
             
     output.seek(0)
     return StreamingResponse(iter([output.getvalue()]), media_type="text/csv", headers={"Content-Disposition": "attachment; filename=reporte_finalizados.csv"})
@@ -146,19 +266,31 @@ def exportar_finalizados():
 # --- Endpoints de Configuración ---
 @app.get("/config/motivos", response_model=List[Motivo])
 def obtener_motivos():
-    return motivos_db
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM motivos")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 @app.post("/config/motivos", response_model=Motivo)
-def crear_motivo(motivo: Motivo):
-    motivos_db.append(motivo)
-    guardar_datos()
+async def crear_motivo(motivo: Motivo):
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute("INSERT OR REPLACE INTO motivos (nombre, monto) VALUES (?, ?)", (motivo.nombre, motivo.monto))
+    conn.commit()
+    conn.close()
+    await manager.broadcast({"type": "update_motivos"})
     return motivo
 
 @app.delete("/config/motivos/{nombre}")
-def eliminar_motivo(nombre: str):
-    global motivos_db
-    motivos_db = [m for m in motivos_db if m.nombre != nombre]
-    guardar_datos()
+async def eliminar_motivo(nombre: str):
+    conn = get_db_conn()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM motivos WHERE nombre = ?", (nombre,))
+    conn.commit()
+    conn.close()
+    await manager.broadcast({"type": "update_motivos"})
     return {"mensaje": "Eliminado"}
 
 if __name__ == "__main__":
