@@ -1,0 +1,220 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* Nuve Voladora Page 1 Color Palette */
+        --color-fuschia: #ed4e9e;
+        --color-iris: #4b56ed;
+        --color-peach: #f3d9da;
+        --color-onyx: #0e0e10;
+        --color-evergreen: #4deb9e;
+        --color-light-slate: #8ccca1;
+        --color-dorian: #ecf1f4;
+        --color-ghost-white: #fafafa;
+        --color-white: #ffffff;
+    }
+
+    body {
+        @apply bg-[#fafafa] antialiased;
+        color: var(--color-onyx);
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+}
+
+@layer components {
+    /* --- Sistema de Diseño Nuve Voladora --- */
+
+    /* Contenedor Principal (Estilo Ventana Nuve / Header) */
+    .nuve-window {
+        @apply bg-[#fafafa]/70 backdrop-blur-3xl border border-white/50 shadow-[0_8px_32px_rgba(0, 0, 0, 0.06)];
+        border-radius: 40px;
+        backdrop-filter: blur(40px) saturate(180%);
+    }
+
+    /* Tarjetas (Estilo Nuve / iOS 17 + Neumorfismo Marcado) */
+    .nuve-card {
+        @apply bg-white/95 transition-all duration-300;
+        border-radius: 30px;
+        box-shadow: 
+            16px 16px 32px rgba(0, 0, 0, 0.12), 
+            -16px -16px 32px rgba(255, 255, 255, 1);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .nuve-card:hover {
+        box-shadow: 
+            24px 24px 48px rgba(0, 0, 0, 0.16), 
+            -24px -24px 48px rgba(255, 255, 255, 1);
+        transform: translateY(-2px);
+    }
+
+    /* Botones (Estilo macOS / Formal) */
+    .nuve-button {
+        @apply bg-white border border-[#d1d9e0] px-5 py-2 font-medium text-[14px] transition-all active:scale-95 shadow-sm;
+        border-radius: 6px;
+        color: var(--color-onyx);
+    }
+
+    .nuve-button:hover {
+        @apply bg-[#f6f8fa] border-[#c1c9d0];
+    }
+
+    .nuve-button-primary {
+        @apply text-white shadow-md border-transparent font-bold;
+        background: linear-gradient(180deg, #3d98ff 0%, #007aff 100%) !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        color: white !important;
+    }
+
+    .nuve-button-primary:hover {
+        background: linear-gradient(180deg, #50a4ff 0%, #006ce6 100%) !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+
+    /* Inputs (Estilo Nuve) */
+    .nuve-input {
+        background-color: var(--color-dorian);
+        @apply text-[16px] border border-transparent focus:border-[#485235]/30 focus:bg-white focus:ring-4 focus:ring-[#4b56ed]/10 outline-none transition-all;
+        border-radius: 6px;
+        padding: 7px 10px 7px 7px !important;
+        color: var(--color-onyx);
+    }
+
+    .nuve-select {
+        @apply shadow-[0_4px_12px_rgba(0, 0, 0, 0.05)];
+    }
+
+    .nuve-input::placeholder {
+        @apply text-[#0e0e10]/40;
+    }
+
+    /* Badges / Estados */
+    .nuve-badge {
+        @apply text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full;
+    }
+
+    /* Listas / Celdas */
+    .nuve-list-item {
+        @apply flex items-center justify-between p-4 border-b border-[#ecf1f4] last:border-none;
+    }
+
+    /* --- Clases Específicas del Proyecto DingDong --- */
+
+    /* Patient Card Specific States (Boders & Tints) */
+    .status-espera-border {
+        border: 2px solid #4b56ed !important;
+        /* Iris (Blue) */
+        background-color: rgba(75, 86, 237, 0.03) !important;
+    }
+
+    .status-consulta-border {
+        border: 2px solid #4deb9e !important;
+        /* Evergreen (Green) */
+        background-color: rgba(77, 235, 158, 0.03) !important;
+    }
+
+    .status-finalizado-border {
+        border: 2px solid #ed4e9e !important;
+        /* Fuschia */
+        background-color: rgba(237, 78, 158, 0.03) !important;
+    }
+
+    /* Alerta del componente anterior (preservado con nuevos colores) */
+    .nuve-alert {
+        @apply bg-white/95 backdrop-blur-2xl rounded-[30px] p-5 shadow-2xl border border-[#ecf1f4] select-none mx-auto;
+        width: 270px;
+    }
+
+    /* --- Dashboard Panels (Neumorphism with Colors) --- */
+    .column-nuve {
+        @apply border-[3px] bg-[#fafafa] transition-all duration-300;
+        border-radius: 48px;
+    }
+
+    .column-espera-nuve {
+        border-color: #e0e7ff;
+        /* Light Iris (Blue) */
+        box-shadow:
+            6px 6px 12px rgba(75, 86, 237, 0.08),
+            -6px -6px 12px rgba(255, 255, 255, 0.9),
+            inset 2px 2px 4px rgba(75, 86, 237, 0.05);
+    }
+
+    .column-consulta-nuve {
+        border-color: #dcfce7;
+        /* Light Evergreen (Green) */
+        box-shadow:
+            6px 6px 12px rgba(77, 235, 158, 0.08),
+            -6px -6px 12px rgba(255, 255, 255, 0.9),
+            inset 2px 2px 4px rgba(77, 235, 158, 0.05);
+    }
+
+    .column-finalizado-nuve {
+        border-color: #fce7f3;
+        /* Light Fuschia */
+        box-shadow:
+            6px 6px 12px rgba(237, 78, 158, 0.08),
+            -6px -6px 12px rgba(255, 255, 255, 0.9),
+            inset 2px 2px 4px rgba(237, 78, 158, 0.05);
+    }
+
+    .column-active-nuve {
+        @apply bg-white border-opacity-100 scale-[1.01] shadow-lg;
+        border-color: var(--color-iris);
+    }
+
+    /* --- Secciones de Configuración (Estilo macOS Formal + Slate) --- */
+    .nuve-config-overlay {
+        background-color: rgba(14, 14, 16, 0.4) !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+    }
+
+    .nuve-window-formal {
+        background-color: #f8fafc; /* Slate 50 */
+        @apply border border-slate-200 shadow-[0_24px_48px_rgba(0,0,0,0.12)];
+        border-radius: 12px;
+    }
+
+    .nuve-config-section {
+        background-color: #f1f5f9; /* Slate 100 */
+        @apply p-6 rounded-xl border border-slate-200 mb-6;
+    }
+
+    .nuve-motive-item {
+        background-color: rgba(243, 217, 218, 0.2); /* Subtle Peach tint */
+        @apply flex justify-between items-center px-4 py-2.5 rounded-lg border border-slate-200 shadow-sm transition-all;
+    }
+
+    .nuve-motive-item:hover {
+        @apply border-[#4b56ed]/30 shadow-md translate-x-1;
+    }
+
+    .nuve-config-title {
+        color: var(--color-onyx);
+        @apply text-[11px] font-black uppercase tracking-[0.1em] mb-4;
+        border-left: 3px solid var(--color-fuschia);
+        padding-left: 8px;
+    }
+
+    .nuve-section-title {
+        color: var(--color-onyx);
+        @apply text-[11px] font-black uppercase tracking-[0.1em] mb-4;
+        border-left: 3px solid var(--color-evergreen);
+        padding-left: 8px;
+    }
+
+    .nuve-text-iris {
+        color: var(--color-iris);
+    }
+
+    .nuve-text-fuschia {
+        color: var(--color-fuschia);
+    }
+
+    .nuve-accent-peach {
+        background-color: var(--color-peach);
+    }
+}

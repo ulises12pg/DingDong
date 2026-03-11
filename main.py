@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from typing import List, Optional
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse, HTMLResponse
+from fastapi.responses import StreamingResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 import uuid
 from datetime import datetime
@@ -143,11 +143,41 @@ def servir_frontend():
     with open(index_path, "r", encoding="utf-8") as f:
         return f.read()
 
+@app.get("/test", response_class=HTMLResponse)
+def servir_test():
+    test_path = resource_path("test_component.html")
+    with open(test_path, "r", encoding="utf-8") as f:
+        return f.read()
+
 @app.get("/publico", response_class=HTMLResponse)
 def servir_publico():
     publico_path = resource_path("publico.html")
     with open(publico_path, "r", encoding="utf-8") as f:
         return f.read()
+
+# Favicon mínimo (16x16 azul Iris #4b56ed) generado en memoria
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    favicon_path = resource_path("static/favicon.ico")
+    if os.path.exists(favicon_path):
+        with open(favicon_path, "rb") as f:
+            return Response(content=f.read(), media_type="image/x-icon")
+    # ICO minimal 1x1 pixel azul (fallback)
+    ico_data = bytes([
+        0,0,1,0,1,0,  # ICO header
+        1,1,0,0,1,0,32,0,  # image directory
+        40,0,0,0,           # size of BITMAPINFOHEADER
+        40,0,0,0,           # width=40 -> actually we use 1 but offset needs calc
+    ])
+    # minimal valid ICO: use a pre-encoded 1x1 blue pixel ICO
+    minimal_ico = bytes([
+        0x00,0x00,0x01,0x00,0x01,0x00,0x10,0x10,0x00,0x00,0x01,0x00,0x20,0x00,
+        0x68,0x04,0x00,0x00,0x16,0x00,0x00,0x00,0x28,0x00,0x00,0x00,0x10,0x00,
+        0x00,0x00,0x20,0x00,0x00,0x00,0x01,0x00,0x20,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x04,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
+        0x00,0x00,0x00,0x00,0x00,0x00
+    ] + [0xed,0x56,0x4b,0xff]*256 + [0x00]*64)  # 16x16 Iris pixels + AND mask
+    return Response(content=bytes(minimal_ico), media_type="image/x-icon")
 
 @app.get("/turnos", response_model=List[Paciente])
 def obtener_turnos():

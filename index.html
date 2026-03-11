@@ -5,81 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DingDong | Medical Hub</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <script src="/static/tailwindcss.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f1f5f9;
-            /* Slate 100 */
-            color: #1e293b;
-            /* Slate 800 */
-        }
-
-        .macos-window {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-        }
-
-        .macos-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            /* Slate 200 */
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .macos-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-            border-color: #94a3b8;
-            /* Slate 400 */
-        }
-
-        .macos-button {
-            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
-            border: 1px solid #e2e8f0;
-            transition: all 0.15s ease;
-        }
-
-        .macos-button:hover {
-            background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-            border-color: #cbd5e1;
-        }
-
-        .macos-button:active {
-            background: #f1f5f9;
-            transform: scale(0.97);
-        }
-
-        .macos-input {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            transition: border-color 0.2s ease;
-        }
-
-        .macos-input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            ring: 2px solid #3b82f644;
-        }
-
-        /* Degradados sutiles para los bordes de estado */
-        .status-espera {
-            border-bottom: 3px solid #f59e0b;
-        }
-
-        .status-consulta {
-            border-bottom: 3px solid #10b981;
-        }
-
-        .status-finalizado {
-            border-bottom: 3px solid #64748b;
-        }
-
         .dragging {
             opacity: 0.5;
             cursor: grabbing;
@@ -87,19 +16,14 @@
 
         .column {
             min-height: 70vh;
-            border-radius: 1rem;
-            background: rgba(248, 250, 252, 0.5);
-            /* Slate 50 */
-            border: 1px dashed #cbd5e1;
-            transition: background 0.2s ease;
+            @apply column-nuve;
         }
 
         .column-active {
-            background: rgba(226, 232, 240, 0.8);
-            border-style: solid;
+            @apply column-active-nuve;
         }
 
-        /* Scrollbar minimalista */
+        /* Scrollbar minimalista Nuve Style */
         ::-webkit-scrollbar {
             width: 6px;
         }
@@ -109,134 +33,128 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: #c7c7cc;
             border-radius: 10px;
         }
     </style>
 </head>
 
-<body class="min-h-screen p-8 text-slate-800">
+<body class="min-h-screen p-6 md:p-10">
 
     <div class="max-w-7xl mx-auto">
-        <!-- Barra Superior Tipo macOS -->
+        <!-- Barra Superior Nuve Style -->
         <header
-            class="macos-window p-4 rounded-2xl mb-10 flex flex-col lg:flex-row justify-between items-center gap-4 sticky top-4 z-40">
+            class="nuve-window p-5 mb-12 flex flex-col lg:flex-row justify-between items-center gap-6 sticky top-4 z-40 mx-2">
             <div class="flex items-center gap-3">
                 <div class="flex gap-1.5 px-2">
-                    <div class="w-3 h-3 rounded-full bg-red-400"></div>
-                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
-                    <div class="w-3 h-3 rounded-full bg-green-400"></div>
+                    <div class="w-3 h-3 rounded-full bg-[#ed4e9e]"></div> <!-- Fuschia -->
+                    <div class="w-3 h-3 rounded-full bg-[#f3d9da]"></div> <!-- Peach -->
+                    <div class="w-3 h-3 rounded-full bg-[#4deb9e]"></div> <!-- Evergreen -->
                 </div>
-                <div class="h-6 w-px bg-slate-200 mx-2"></div>
-                <h1 class="text-xl font-bold tracking-tight text-slate-700">DingDong</h1>
+                <div class="h-6 w-px bg-[#ecf1f4] mx-2"></div>
+                <h1 class="text-xl font-bold tracking-tight text-[#0e0e10]">DingDong</h1>
             </div>
 
             <div class="flex items-center gap-2 flex-1 max-w-2xl px-4">
-                <input type="text" id="nombreInput" placeholder="Nombre Paciente"
-                    class="macos-input px-4 py-2 rounded-xl text-sm flex-1 outline-none">
-                <select id="motivoSelect"
-                    class="macos-input px-3 py-2 rounded-xl text-sm outline-none bg-white cursor-pointer"></select>
-                <button onclick="agregarPaciente()"
-                    class="macos-button px-5 py-2 rounded-xl text-sm font-semibold text-slate-700 shadow-sm transition-all active:scale-95">+
-                    Nuevo Turno</button>
+                <input type="text" id="nombreInput" placeholder="Nombre Paciente" class="nuve-input flex-1">
+                <select id="motivoSelect" class="nuve-input nuve-select bg-white/50 cursor-pointer"></select>
+                <button onclick="agregarPaciente()" class="nuve-button nuve-button-primary px-6">+ Nuevo Turno</button>
             </div>
 
             <div class="flex items-center gap-2">
-                <a href="/publico" target="_blank" class="macos-button p-2.5 rounded-xl text-lg"
-                    title="Pantalla TV">📺</a>
-                <button onclick="toggleModal()" class="macos-button p-2.5 rounded-xl text-lg"
-                    title="Configuración">⚙️</button>
+                <a href="/publico" target="_blank" class="nuve-button p-2" title="Pantalla TV">📺</a>
+                <button onclick="toggleModal()" class="nuve-button p-2" title="Configuración">⚙️</button>
             </div>
         </header>
 
-        <!-- Stats - Minimalist Layout -->
+        <!-- Stats - Nuve Layout -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <div class="bg-white/80 backdrop-blur p-6 rounded-2xl border border-slate-200/60 shadow-sm">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Caja del día</p>
+            <div class="nuve-card p-6">
+                <p class="text-[11px] font-bold text-[#0e0e10]/40 uppercase tracking-widest mb-1">Caja del día</p>
                 <div class="flex justify-between items-end">
-                    <p id="stat-ingresos" class="text-3xl font-light text-slate-800">$0</p>
-                    <span class="text-xs font-medium text-slate-400">MXN</span>
+                    <p id="stat-ingresos" class="text-3xl font-bold text-[#0e0e10]">$0</p>
+                    <span class="text-xs font-medium text-[#0e0e10]/30">MXN</span>
                 </div>
             </div>
-            <div class="bg-white/80 backdrop-blur p-6 rounded-2xl border border-slate-200/60 shadow-sm">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Atendidos</p>
-                <p id="stat-atendidos" class="text-3xl font-light text-slate-800">0</p>
+            <div class="nuve-card p-6">
+                <p class="text-[11px] font-bold text-[#0e0e10]/40 uppercase tracking-widest mb-1">Atendidos</p>
+                <p id="stat-atendidos" class="text-3xl font-bold text-[#0e0e10]">0</p>
             </div>
-            <div class="bg-white/80 backdrop-blur p-6 rounded-2xl border border-slate-200/60 shadow-sm">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">En espera</p>
-                <p id="stat-espera" class="text-3xl font-light text-slate-800">0</p>
+            <div class="nuve-card p-6">
+                <p class="text-[11px] font-bold text-[#0e0e10]/40 uppercase tracking-widest mb-1">En espera</p>
+                <p id="stat-espera" class="text-3xl font-bold text-[#0e0e10]">0</p>
             </div>
         </div>
 
         <!-- Board Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Espega -->
+            <!-- Espera -->
             <section class="flex flex-col gap-4">
-                <div class="flex items-center justify-between px-2">
-                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sala de Espera</h2>
+                <div class="flex items-center justify-between px-4">
+                    <h2 class="text-xs font-bold text-[#0e0e10]/50 uppercase tracking-wider">Sala de Espera</h2>
                     <span id="count-espera"
-                        class="bg-slate-200 text-slate-600 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+                        class="bg-[#ecf1f4] text-[#0e0e10] text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-                <div id="espera" class="column p-4 space-y-4 overflow-y-auto" ondrop="drop(event, 'espera')"
-                    ondragover="allowDrop(event)" ondragenter="this.classList.add('column-active')"
+                <div id="espera" class="column column-espera-nuve p-4 space-y-4 overflow-y-auto"
+                    ondrop="drop(event, 'espera')" ondragover="allowDrop(event)"
+                    ondragenter="this.classList.add('column-active')"
                     ondragleave="this.classList.remove('column-active')"></div>
             </section>
 
             <!-- Consulta -->
             <section class="flex flex-col gap-4">
-                <div class="flex items-center justify-between px-2">
-                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">En Consulta</h2>
+                <div class="flex items-center justify-between px-4">
+                    <h2 class="text-xs font-bold text-[#0e0e10]/50 uppercase tracking-wider">En Consulta</h2>
                     <span id="count-consulta"
-                        class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
+                        class="bg-[#ecf1f4] text-[#4b56ed] text-[10px] px-2 py-0.5 rounded-full font-bold">0</span>
                 </div>
-                <div id="consulta" class="column p-4 space-y-4 overflow-y-auto" ondrop="drop(event, 'consulta')"
-                    ondragover="allowDrop(event)" ondragenter="this.classList.add('column-active')"
+                <div id="consulta" class="column column-consulta-nuve p-4 space-y-4 overflow-y-auto"
+                    ondrop="drop(event, 'consulta')" ondragover="allowDrop(event)"
+                    ondragenter="this.classList.add('column-active')"
                     ondragleave="this.classList.remove('column-active')"></div>
             </section>
 
             <!-- Finalizado -->
             <section class="flex flex-col gap-4">
-                <div class="flex items-center justify-between px-2">
-                    <h2 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Finalizados</h2>
+                <div class="flex items-center justify-between px-4">
+                    <h2 class="text-xs font-bold text-[#0e0e10]/50 uppercase tracking-wider">Finalizados</h2>
                     <button onclick="exportarExcel()"
-                        class="text-[10px] font-bold text-slate-400 hover:text-slate-600 underline decoration-slate-200 underline-offset-4 decoration-2">Exportar</button>
+                        class="text-[10px] font-bold text-[#4b56ed] hover:underline underline-offset-4 decoration-2">Exportar</button>
                 </div>
-                <div id="finalizado" class="column p-4 space-y-4 overflow-y-auto" ondrop="drop(event, 'finalizado')"
-                    ondragover="allowDrop(event)" ondragenter="this.classList.add('column-active')"
+                <div id="finalizado" class="column column-finalizado-nuve p-4 space-y-4 overflow-y-auto"
+                    ondrop="drop(event, 'finalizado')" ondragover="allowDrop(event)"
+                    ondragenter="this.classList.add('column-active')"
                     ondragleave="this.classList.remove('column-active')"></div>
             </section>
         </div>
     </div>
 
-    <!-- Modal Config macOS Style -->
-    <div id="modalConfig"
-        class="fixed inset-0 bg-slate-900/20 backdrop-blur-sm hidden flex justify-center items-center z-50 p-4">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm border border-slate-100">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-lg font-bold text-slate-800">Preferencias</h3>
-                <button onclick="toggleModal()" class="text-slate-400 hover:text-slate-600">✕</button>
+    <!-- Modal Config Nuve Style -->
+    <div id="modalConfig" class="fixed inset-0 nuve-config-overlay hidden flex justify-center items-center z-50 p-4">
+        <div class="nuve-window-formal p-8 w-full max-w-sm">
+            <div class="flex justify-between items-center mb-8">
+                <h3 class="text-xl font-bold text-[#0e0e10]">Preferencias</h3>
+                <button onclick="toggleModal()" class="text-[#0e0e10]/40 hover:text-[#0e0e10] text-lg">✕</button>
             </div>
 
-            <div class="space-y-4 mb-8">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Motivos registrados</p>
-                <div id="listaMotivos" class="space-y-2 max-h-48 overflow-y-auto"></div>
+            <div class="mb-8">
+                <p class="nuve-config-title">Motivos registrados</p>
+                <div id="listaMotivos" class="space-y-3 max-h-56 overflow-y-auto pr-2"></div>
             </div>
 
-            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6">
-                <p class="text-[10px] font-bold text-slate-400 uppercase mb-3">Añadir Motivo</p>
-                <div class="space-y-3">
-                    <input id="nuevoMotivoNombre" placeholder="Nombre del servicio"
-                        class="macos-input bg-white w-full px-4 py-2 rounded-xl text-sm outline-none">
-                    <div class="flex gap-2">
+            <div class="nuve-config-section">
+                <p class="nuve-section-title">Añadir Motivo</p>
+                <div class="space-y-4">
+                    <input id="nuevoMotivoNombre" placeholder="Nombre del servicio" class="nuve-input bg-white w-full">
+                    <div class="flex gap-3">
                         <input id="nuevoMotivoMonto" type="number" placeholder="Precio $"
-                            class="macos-input bg-white flex-1 px-4 py-2 rounded-xl text-sm outline-none">
-                        <button onclick="guardarMotivo()"
-                            class="bg-slate-800 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-700 active:scale-95 transition-all">OK</button>
+                            class="nuve-input bg-white flex-1">
+                        <button onclick="guardarMotivo()" class="nuve-button nuve-button-primary px-6">OK</button>
                     </div>
                 </div>
             </div>
             <button onclick="toggleModal()"
-                class="w-full text-sm font-bold text-slate-400 py-2 hover:text-slate-600">Listo</button>
+                class="w-full text-[15px] font-bold nuve-text-iris hover:nuve-text-fuschia transition-colors py-2 tracking-wide">Listo</button>
         </div>
     </div>
 
@@ -287,23 +205,23 @@
 
         function crearTarjetaHTML(paciente) {
             const tarjeta = document.createElement('div');
-            tarjeta.className = `macos-card p-4 rounded-xl shadow-sm border-l-4 status-${paciente.estado} cursor-grab active:cursor-grabbing group transition-all`;
+            tarjeta.className = `nuve-card p-4 status-${paciente.estado}-border cursor-grab active:cursor-grabbing group transition-all`;
             tarjeta.draggable = true;
             tarjeta.id = paciente.id;
 
-            let duracion = paciente.estado === 'finalizado' ? `<p class="text-[10px] font-bold text-slate-400 mt-2 bg-slate-50 inline-block px-2 rounded-md">⏱ ${calcularTiempoTotal(paciente.hora_creacion, paciente.hora_salida)}</p>` : '';
+            let duracion = paciente.estado === 'finalizado' ? `<p class="text-[10px] font-bold text-[#0e0e10]/40 mt-2 bg-[#ecf1f4] inline-block px-2 py-0.5 rounded-md">⏱ ${calcularTiempoTotal(paciente.hora_creacion, paciente.hora_salida)}</p>` : '';
 
             tarjeta.innerHTML = `
                 <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="font-bold text-slate-700 text-sm">${paciente.nombre}</h4>
-                        <p class="text-[10px] font-medium text-slate-400 uppercase tracking-tighter mt-1">${paciente.motivo}</p>
+                        <h4 class="font-bold text-[#0e0e10] text-sm">${paciente.nombre}</h4>
+                        <p class="text-[10px] font-bold text-[#0e0e10]/50 uppercase tracking-tighter mt-1">${paciente.motivo}</p>
                     </div>
-                    <button onclick="eliminarPaciente('${paciente.id}')" class="text-slate-300 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100">✕</button>
+                    <button onclick="eliminarPaciente('${paciente.id}')" class="text-[#d1d9e0] hover:text-[#ed4e9e] transition-colors opacity-0 group-hover:opacity-100 p-1">✕</button>
                 </div>
                 <div class="flex justify-between items-center mt-4">
-                    <span class="text-[10px] font-bold text-slate-500">🕒 ${paciente.hora_creacion}</span>
-                    <span class="text-xs font-black text-slate-800">$${paciente.monto}</span>
+                    <span class="text-[10px] font-bold text-[#0e0e10]/40">🕒 ${paciente.hora_creacion}</span>
+                    <span class="text-sm font-bold text-[#0e0e10]">$${paciente.monto}</span>
                 </div>
                 ${duracion}
             `;
@@ -343,9 +261,9 @@
             const motivos = await res.json();
             document.getElementById('motivoSelect').innerHTML = motivos.map(m => `<option value="${m.nombre}" data-monto="${m.monto}">${m.nombre}</option>`).join('');
             document.getElementById('listaMotivos').innerHTML = motivos.map(m => `
-                <div class="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                    <span class="text-xs font-bold text-slate-600">${m.nombre} <b class="text-slate-400 ml-1">$${m.monto}</b></span>
-                    <button onclick="borrarMotivo('${m.nombre}')" class="text-slate-300 hover:text-red-400">✕</button>
+                <div class="nuve-motive-item">
+                    <span class="text-xs font-bold text-[#0e0e10]">${m.nombre} <b class="nuve-text-iris ml-1.5 ">$${m.monto}</b></span>
+                    <button onclick="borrarMotivo('${m.nombre}')" class="text-[#d1d9e0] hover:nuve-text-fuschia transition-colors p-1">✕</button>
                 </div>
             `).join('');
         }
@@ -365,7 +283,13 @@
         function exportarExcel() { window.location.href = `${API_URL}/exportar/finalizados`; }
         function a(i, f) { if (!i || !f) return '0m'; const [h1, m1] = i.split(':').map(Number), [h2, m2] = f.split(':').map(Number); let d = (h2 * 60 + m2) - (h1 * 60 + m1); if (d < 0) d += 1440; return d > 60 ? `${Math.floor(d / 60)}h ${d % 60}m` : `${d}m`; }
         function calcularTiempoTotal(i, f) { return a(i, f) }
-        function actualizarContadores() { ['espera', 'consulta', 'finalizado'].forEach(e => document.getElementById(`count-${e}`).innerText = document.getElementById(e).children.length); }
+        function actualizarContadores() {
+            ['espera', 'consulta', 'finalizado'].forEach(e => {
+                const col = document.getElementById(e);
+                const badge = document.getElementById(`count-${e}`);
+                if (col && badge) badge.innerText = col.children.length;
+            });
+        }
         function playDingDong() {
             const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; const audioCtx = new AudioContext();
             function p(f, t, d) { const o = audioCtx.createOscillator(), g = audioCtx.createGain(); o.frequency.value = f; o.connect(g); g.connect(audioCtx.destination); o.start(t); g.gain.setValueAtTime(0.2, t); g.gain.exponentialRampToValueAtTime(0.01, t + d); o.stop(t + d); }
